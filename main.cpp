@@ -24,6 +24,9 @@ bool isNotValid(int x, int y, int rows, int cols) {
   return x < 0 || x >= cols || y < 0 || y >= rows || prop[y][x] == '#';
 }
 
+const int dx[] = {0, -1, 1, 0};
+const int dy[] = {-1, 0, 0, 1};
+
 void Map(Image map) {
   for (int i = 0; i < 22; i++) {
     for (int j = 0; j < 19; j++) {
@@ -69,7 +72,7 @@ public:
     prop[16][9] = 'P';
 
     speed = 5;
-    dX = -1;
+    dX = 0;
     pdX = -1;
     dY = 0;
     pdY = 0;
@@ -86,36 +89,46 @@ public:
   void check() {
     if (dX == pdX && dY == pdY)
       return;
-    int xx = x + pdX * speed;
-    int yy = y + pdY * speed;
-    int centered_x = (xx + 24);
-    int centered_y = (yy + 24);
-    if (prop[(centered_y + 24 * pdY) / 48][(centered_x + 24 * pdX) / 48] == '#')
-      return;
+
+    // Check all 4 corners are not in a wall
+    // 47 47, 0 47, 47 0
+    int dx[] = {0, 1, 0, 1};
+    int dy[] = {0, 1, 1, 0};
+
+    for (int i = 0; i < 4; i++) {
+      int xx = x + 3 + pdX * speed;
+      int yy = y + 3 + pdY * speed;
+
+      int grid_x = (xx + 42 * dx[i]) / 48;
+      int grid_y = (yy + 42 * dy[i]) / 48;
+      DrawCircle(xx + 42 * dx[i], yy + 42 * dy[i], 5, RED);
+      cout << grid_x << " " << grid_y << endl;
+      if (prop[grid_y][grid_x] == '#')
+        return;
+    }
+
     dX = pdX;
     dY = pdY;
   }
 
   void update() {
     check();
-    int i = (y + 24) / 48;
-    int j = (x + 24) / 48;
+    int centered_x = x + 24;
+    int centered_y = y + 24;
+    int i = (y + 24) / 48.0;
+    int j = (x + 24) / 48.0;
+    // If Right or bottom then floor
     prop[i][j] = '.';
-    x += dX * speed;
-    y += dY * speed;
-    int centered_x = (x + 24);
-    int centered_y = (y + 24);
-    int dx[] = {-1, +1, 0, 0};
-    int dy[] = {0, 0, -1, +1};
-    for (int i = 0; i < 4; i++) {
-      if (prop[(centered_y + 19 * dy[i]) / 48]
-              [(centered_x + 19 * dx[i]) / 48] == '#') {
-        x -= dx[i] * speed;
-        y -= dy[i] * speed;
-      }
+
+    DrawCircle(x + 24, y + 24, 5, RED);
+    cout << i + dY << " " << j + dX << endl;
+    if (prop[(centered_y + 26 * dY) / 48][(centered_x + 26 * dX) / 48] != '#') {
+      DrawCircle(centered_x + 25 * dX, centered_y + 25 * dY, 5, RED);
+      x += dX * speed;
+      y += dY * speed;
     }
-    i = (y + 24) / 48;
-    j = (x + 24) / 48;
+    i = (y + 24) / 48.0;
+    j = (x + 24) / 48.0;
     // Update on grid
     prop[i][j] = 'P';
     // cout << y / 48 << " " << x / 48 << endl;
@@ -142,7 +155,7 @@ public:
                      Rectangle{(float)x, (float)y, 48, 48}, Vector2{48, 48},
                      180.0f, WHITE);
     }
-    cout << (x + 24) / 48 << " " << (y + 24) / 48 << endl;
+    // cout << (x + 24) / 48 << " " << (y + 24) / 48 << endl;
     DrawMap();
   }
 
@@ -162,9 +175,6 @@ public:
     }
   }
 };
-
-const int dx[] = { 0, -1, 1, 0 };
-const int dy[] = { -1, 0, 0, 1 };;
 
 class ghost {
   int x;
@@ -204,22 +214,31 @@ public:
   void draw() { DrawTexture(ghostT, x, y, WHITE); }
 
   void next(Vector2 pac) {
-    // Of all the directions possible, Return the direction that is NOT opposite to current AND allows the ghost to be closest  
+    // Of all the directions possible, Return the direction that is NOT opposite
+    // to current AND allows the ghost to be closest
     int centered_x = (x + 24);
     int centered_y = (y + 24);
-    int centered_x_grid = (x + 24)/48;
-    int centered_y_grid = (y + 24)/48;
-    int target_x = (pac.x + 24)/48;
-    int target_y = (pac.y + 24)/48;
-    vector<pair<int, float>> distances; 
-    for (int i = 0; i < 4; i++){
-      // Make sure it is in bounds 
-      if (dx[i] == -dX && dy[i] == -dY) continue;
-      if (isNotValid((centered_x + dx[i]*24)/48, (centered_y + dy[i]*24)/48, 22, 19)) continue;
-      // Calculate distance 
-      distances.push_back({i, distance(centered_x_grid + dx[i] , centered_y_grid + dy[i], target_x , target_y)});
+    int centered_x_grid = (x + 24) / 48;
+    int centered_y_grid = (y + 24) / 48;
+    int target_x = (pac.x + 24) / 48;
+    int target_y = (pac.y + 24) / 48;
+    vector<pair<int, float>> distances;
+    for (int i = 0; i < 4; i++) {
+      // Make sure it is in bounds
+      if (dx[i] == -dX && dy[i] == -dY)
+        continue;
+      if (isNotValid((centered_x + dx[i] * 24) / 48,
+                     (centered_y + dy[i] * 24) / 48, 22, 19))
+        continue;
+      // Calculate distance
+      distances.push_back(
+          {i, distance(centered_x_grid + dx[i], centered_y_grid + dy[i],
+                       target_x, target_y)});
     }
-    sort(distances.begin(), distances.end(), [](pair<int, float> a, pair<int, float> b){ return a.second < b.second;});
+    sort(distances.begin(), distances.end(),
+         [](pair<int, float> a, pair<int, float> b) {
+           return a.second < b.second;
+         });
     dX = dx[distances[0].first];
     dY = dy[distances[0].first];
   }
@@ -231,7 +250,7 @@ public:
     next(pac);
     x += dX * speed;
     y += dY * speed;
-        int centered_x = (x + 24);
+    int centered_x = (x + 24);
     int centered_y = (y + 24);
     int dx[] = {-1, +1, 0, 0};
     int dy[] = {0, 0, -1, +1};
@@ -242,7 +261,6 @@ public:
         y -= dy[i] * speed;
       }
     }
-
   }
 };
 
@@ -277,7 +295,7 @@ int main() {
     pac.control();
     pac.update();
     gst.draw();
-    gst.Update(pac.getPos());
+    // gst.Update(pac.getPos());
     EndDrawing();
   }
 
