@@ -199,14 +199,26 @@ public:
     dY = 0;
   }
   void check() {
-    if ((dX == pdX && dY == pdY))
+    if (dX == pdX && dY == pdY)
       return;
-    int xx = x + pdX * speed;
-    int yy = y + pdY * speed;
-    int centered_x = (xx + 24);
-    int centered_y = (yy + 24);
-    if (prop[(centered_y + 24 * pdY) / 48][(centered_x + 24 * pdX) / 48] == '#')
-      return;
+
+    // Check all 4 corners are not in a wall
+    // 47 47, 0 47, 47 0
+    int dx[] = {0, 1, 0, 1};
+    int dy[] = {0, 1, 1, 0};
+
+    for (int i = 0; i < 4; i++) {
+      int xx = x + 3 + pdX * speed;
+      int yy = y + 3 + pdY * speed;
+
+      int grid_x = (xx + 42 * dx[i]) / 48;
+      int grid_y = (yy + 42 * dy[i]) / 48;
+      DrawCircle(xx + 42 * dx[i], yy + 42 * dy[i], 5, RED);
+      cout << grid_x << " " << grid_y << endl;
+      if (prop[grid_y][grid_x] == '#')
+        return;
+    }
+
     dX = pdX;
     dY = pdY;
   }
@@ -230,75 +242,83 @@ public:
       if (isNotValid((centered_x + dx[i] * 24) / 48,
                      (centered_y + dy[i] * 24) / 48, 22, 19))
         continue;
-      // Calculate distance
-      distances.push_back(
-          {i, distance(centered_x_grid + dx[i], centered_y_grid + dy[i],
-                       target_x, target_y)});
-    }
-    sort(distances.begin(), distances.end(),
-         [](pair<int, float> a, pair<int, float> b) {
-           return a.second < b.second;
-         });
-    dX = dx[distances[0].first];
-    dY = dy[distances[0].first];
-  }
-  float distance(int x1, int y1, int x2, int y2) {
-    return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-  }
-  void move() {}
-  void Update(Vector2 pac) {
-    next(pac);
-    x += dX * speed;
-    y += dY * speed;
-    int centered_x = (x + 24);
-    int centered_y = (y + 24);
-    int dx[] = {-1, +1, 0, 0};
-    int dy[] = {0, 0, -1, +1};
-    for (int i = 0; i < 4; i++) {
-      if (prop[(centered_y + 19 * dy[i]) / 48]
-              [(centered_x + 19 * dx[i]) / 48] == '#') {
-        x -= dx[i] * speed;
-        y -= dy[i] * speed;
+      if (prop[(centered_y + 26 * dy[i]) / 48][(centered_x + 26 * dx[i]) / 48] ==
+          '#') continue;
+        // Calculate distance
+        distances.push_back(
+            {i, distance(centered_x_grid + dx[i], centered_y_grid + dy[i],
+                         target_x, target_y)});
       }
+      sort(distances.begin(), distances.end(),
+           [](pair<int, float> a, pair<int, float> b) {
+             return a.second < b.second;
+           });
+      pdX = dx[distances[0].first];
+      pdY = dy[distances[0].first];
     }
+    float distance(int x1, int y1, int x2, int y2) {
+      return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
+    }
+    void move() {}
+    void Update(Vector2 pac) {
+      next(pac);
+      check();
+      int centered_x = x + 24;
+      int centered_y = y + 24;
+      int i = (y + 24) / 48.0;
+      int j = (x + 24) / 48.0;
+      // If Right or bottom then floor
+
+      DrawCircle(x + 24, y + 24, 5, RED);
+      cout << i + dY << " " << j + dX << endl;
+      if (prop[(centered_y + 26 * dY) / 48][(centered_x + 26 * dX) / 48] !=
+          '#') {
+        DrawCircle(centered_x + 25 * dX, centered_y + 25 * dY, 5, RED);
+        x += dX * speed;
+        y += dY * speed;
+      }
+      i = (y + 24) / 48.0;
+      j = (x + 24) / 48.0;
+      // Update on grid
+      // cout << y / 48 << " " << x / 48 << endl;
+    }
+  };
+
+  class Game {
+
+  public:
+  };
+
+  int main() {
+
+    const int screenWidth = 912;
+    const int screenHeight = 1056;
+
+    InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
+    Image Maze_img = LoadImage("../assets/map.png");
+    Texture2D Maze = LoadTexture("../assets/map.png");
+
+    cout << Maze.height << " " << Maze.width << endl;
+    SetTargetFPS(60);
+
+    Map(Maze_img);
+
+    pacman pac;
+    ghost gst;
+
+    while (!WindowShouldClose()) {
+      BeginDrawing();
+      ClearBackground(WHITE);
+      DrawTexture(Maze, 0, 0, WHITE);
+
+      pac.draw();
+      pac.control();
+      pac.update();
+      gst.draw();
+      gst.Update(pac.getPos());
+      EndDrawing();
+    }
+
+    CloseWindow();
+    return 0;
   }
-};
-
-class Game {
-
-public:
-};
-
-int main() {
-
-  const int screenWidth = 912;
-  const int screenHeight = 1056;
-
-  InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
-  Image Maze_img = LoadImage("../assets/map.png");
-  Texture2D Maze = LoadTexture("../assets/map.png");
-
-  cout << Maze.height << " " << Maze.width << endl;
-  SetTargetFPS(60);
-
-  Map(Maze_img);
-
-  pacman pac;
-  ghost gst;
-
-  while (!WindowShouldClose()) {
-    BeginDrawing();
-    ClearBackground(WHITE);
-    DrawTexture(Maze, 0, 0, WHITE);
-
-    pac.draw();
-    pac.control();
-    pac.update();
-    gst.draw();
-    // gst.Update(pac.getPos());
-    EndDrawing();
-  }
-
-  CloseWindow();
-  return 0;
-}
