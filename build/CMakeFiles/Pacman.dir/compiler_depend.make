@@ -315,6 +315,7 @@ CMakeFiles/Pacman.dir/main.cpp.o: /home/red/Documents/ProjectsDit/Pacman/main.cp
   /usr/include/c++/13.2.1/list \
   /usr/include/c++/13.2.1/locale \
   /usr/include/c++/13.2.1/map \
+  /usr/include/c++/13.2.1/math.h \
   /usr/include/c++/13.2.1/memory \
   /usr/include/c++/13.2.1/memory_resource \
   /usr/include/c++/13.2.1/mutex \
@@ -399,6 +400,7 @@ CMakeFiles/Pacman.dir/main.cpp.o: /home/red/Documents/ProjectsDit/Pacman/main.cp
   /usr/include/math.h \
   /usr/include/pthread.h \
   /usr/include/raylib.h \
+  /usr/include/raymath.h \
   /usr/include/sched.h \
   /usr/include/setjmp.h \
   /usr/include/signal.h \
@@ -449,6 +451,8 @@ CMakeFiles/Pacman.dir/main.cpp.o: /home/red/Documents/ProjectsDit/Pacman/main.cp
 /usr/include/strings.h:
 
 /usr/include/signal.h:
+
+/usr/include/raymath.h:
 
 /usr/include/sys/cdefs.h:
 
@@ -547,6 +551,8 @@ CMakeFiles/Pacman.dir/main.cpp.o: /home/red/Documents/ProjectsDit/Pacman/main.cp
 /usr/include/c++/13.2.1/mutex:
 
 /usr/include/c++/13.2.1/memory:
+
+/usr/include/c++/13.2.1/math.h:
 
 /usr/include/c++/13.2.1/map:
 
