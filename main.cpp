@@ -1,3 +1,4 @@
+#include "headers/effects.h"
 #include <bits/stdc++.h>
 #include <cmath>
 #include <fstream>
@@ -312,8 +313,10 @@ public:
       set = true;
     }
     if (set && IsKeyUp(KEY_SPACE)) {
+      EffectManager::addEffect(Smoke, Vector2{(float)x + 200, (float)y});
       x = coordX - 200;
       y = coordY;
+      EffectManager::addEffect(Dash, Vector2{(float)x + 200, (float)y});
       set = false;
     }
   }
@@ -584,11 +587,13 @@ public:
   }
 };
 
-int main() {
+// Initialize the map
+list<Effect> EffectManager::effectList;
+map<EffectType, Texture2D> EffectMap::effectMap;
 
+int main() {
   const int screenWidth = 912 + 400;
   const int screenHeight = 1056;
-
   InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
   InitAudioDevice();
   Image Maze_img = LoadImage("../assets/map.png");
@@ -608,6 +613,7 @@ int main() {
   Pinky Pinky;
   Inky Inky;
   Clyde Clyde;
+  EffectMap::Init();
   STATE states[] = {CHASE, FRIGHTENED, EATEN, SCATTER};
   Ghost *ghosts[] = {&Blinky, &Pinky, &Inky, &Clyde};
   int i = 0;
@@ -643,11 +649,14 @@ int main() {
         pac.setEaten(false);
       else if (pac.killMode())
         pac.killMode(false);
-      if (score == 3730) win = true;
+      if (score == 3730)
+        win = true;
     }
     if (win) {
-      DrawText("YOU WIN", (screenWidth - 120)/2, (screenHeight / 2), 30, WHITE);
+      DrawText("YOU WIN", (screenWidth - 120) / 2, (screenHeight / 2), 30,
+               WHITE);
     }
+    EffectManager::updateEffects();
     EndDrawing();
   }
 

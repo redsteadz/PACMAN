@@ -1,6 +1,9 @@
 CMakeFiles/Pacman.dir/main.cpp.o: \
  /home/red/Documents/ProjectsDit/Pacman/main.cpp \
  /usr/include/stdc-predef.h \
+ /home/red/Documents/ProjectsDit/Pacman/headers/effects.h \
+ /usr/include/raylib.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/13.2.1/include/stdarg.h \
  /usr/include/c++/13.2.1/x86_64-pc-linux-gnu/bits/stdc++.h \
  /usr/include/c++/13.2.1/cassert \
  /usr/include/c++/13.2.1/x86_64-pc-linux-gnu/bits/c++config.h \
@@ -29,7 +32,6 @@ CMakeFiles/Pacman.dir/main.cpp.o: \
  /usr/include/setjmp.h /usr/include/bits/setjmp.h \
  /usr/include/bits/types/struct___jmp_buf_tag.h \
  /usr/include/bits/types/__sigset_t.h /usr/include/c++/13.2.1/cstdarg \
- /usr/lib/gcc/x86_64-pc-linux-gnu/13.2.1/include/stdarg.h \
  /usr/include/c++/13.2.1/cstddef \
  /usr/lib/gcc/x86_64-pc-linux-gnu/13.2.1/include/stddef.h \
  /usr/include/c++/13.2.1/cstdlib /usr/include/stdlib.h \
@@ -312,5 +314,5 @@ CMakeFiles/Pacman.dir/main.cpp.o: \
  /usr/include/c++/13.2.1/bits/fs_path.h \
  /usr/include/c++/13.2.1/bits/fs_dir.h \
  /usr/include/c++/13.2.1/bits/fs_ops.h \
- /usr/include/c++/13.2.1/memory_resource /usr/include/raylib.h \
- /usr/include/raymath.h /usr/include/c++/13.2.1/math.h
+ /usr/include/c++/13.2.1/memory_resource /usr/include/raymath.h \
+ /usr/include/c++/13.2.1/math.h
