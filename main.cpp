@@ -13,6 +13,7 @@ enum STATE { SCATTER, FRIGHTENED, CHASE, EATEN };
 vector<vector<char>> prop(22, vector<char>(19, ' '));
 int score = 0;
 int Lives = 2;
+int Power = 3;
 
 void saveVector(const vector<vector<char>> &vector,
                 const std::string &filename) {
@@ -194,6 +195,9 @@ class Pacman : public Entity {
   Sound chomp;
   bool eaten = false;
   bool kill = false;
+  bool set = false;
+  int coordX;
+  int coordY;
 
 public:
   bool getEaten() { return eaten; }
@@ -218,7 +222,7 @@ public:
   void Reset() {
     x = 9 * 48;
     y = 16 * 48;
-    dX = 0;
+    dX = -1;
     pdX = -1;
     dY = 0;
     pdY = 0;
@@ -240,7 +244,7 @@ public:
       prop[i][j] = 'X';
       PlaySound(chomp);
       eaten = true;
-    } else if (prop[i][j] == 'P'){
+    } else if (prop[i][j] == 'P') {
       score += 10;
       prop[i][j] = 'X';
       PlaySound(chomp);
@@ -291,6 +295,29 @@ public:
                    0, WHITE);
   }
 
+  void PowerUp() {
+    if (Power <= 0)
+      return;
+    int centerX = (x + 24) / 48.0;
+    int centerY = (y + 24) / 48.0;
+    if (IsKeyDown(KEY_SPACE)) {
+      while (prop[centerY + dY][centerX + dX] != '#') {
+        centerY += dY;
+        centerX += dX;
+        cout << centerY << " " << centerX << endl;
+      }
+      coordX = centerX * 48 + 200;
+      coordY = centerY * 48;
+      DrawCircle(centerX * 48 + 24 + 200, centerY * 48 + 24, 20, YELLOW);
+      set = true;
+    }
+    if (set && IsKeyUp(KEY_SPACE)) {
+      x = coordX - 200;
+      y = coordY;
+      set = false;
+    }
+  }
+
   void Control() {
     if (IsKeyPressed(KEY_W)) {
       pdX = 0;
@@ -305,6 +332,7 @@ public:
       pdX = 1;
       pdY = 0;
     }
+    PowerUp();
   }
 };
 
@@ -583,6 +611,7 @@ int main() {
   STATE states[] = {CHASE, FRIGHTENED, EATEN, SCATTER};
   Ghost *ghosts[] = {&Blinky, &Pinky, &Inky, &Clyde};
   int i = 0;
+  bool win = false;
   while (!WindowShouldClose()) {
     BeginDrawing();
     UpdateMusicStream(bg_music);
@@ -599,20 +628,26 @@ int main() {
     DrawText(live_str.c_str(), 8, 30, 30, WHITE);
     pac.Draw();
     pac.Control();
-    pac.Update();
-    for (int i = 0; i < 4; i++) {
-      ghosts[i]->Draw();
-      ghosts[i]->Update(pac);
-      if (pac.getEaten()) {
-        ghosts[i]->setState(FRIGHTENED);
-      } else if (pac.killMode()){
-        ghosts[i]->setState(EATEN);
+    if (!win) {
+      pac.Update();
+      for (int i = 0; i < 4; i++) {
+        ghosts[i]->Draw();
+        ghosts[i]->Update(pac);
+        if (pac.getEaten()) {
+          ghosts[i]->setState(FRIGHTENED);
+        } else if (pac.killMode()) {
+          ghosts[i]->setState(EATEN);
+        }
       }
+      if (pac.getEaten())
+        pac.setEaten(false);
+      else if (pac.killMode())
+        pac.killMode(false);
+      if (score == 3730) win = true;
     }
-    if (pac.getEaten())
-      pac.setEaten(false);
-    else if (pac.killMode())
-      pac.killMode(false);
+    if (win) {
+      DrawText("YOU WIN", (screenWidth - 120)/2, (screenHeight / 2), 30, WHITE);
+    }
     EndDrawing();
   }
 
