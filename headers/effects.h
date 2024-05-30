@@ -18,10 +18,9 @@ public:
   EffectMap() {}
   static void Init() {
     effectMap[Dash] =
-        LoadTexture("../assets/effects/DashIn/SFX304_01-Sheet-export.png");
-    effectMap[Smoke] =
-        LoadTexture("./../assets/effects/SmokeOut/SFX402_nyknck/"
-                    "SFX402_01-Sheet-export.png");
+        LoadTexture("./assets/effects/DashIn/SFX304_01-Sheet-export.png");
+    effectMap[Smoke] = LoadTexture("./assets/effects/SmokeOut/SFX402_nyknck/"
+                                   "SFX402_01-Sheet-export.png");
   }
 };
 
@@ -65,8 +64,8 @@ class EffectManager {
 public:
   static void addEffect(EffectType effect, Vector2 position) {
     Effect e(effect, position);
-    effectList.push_back(
-        e); // Using push_back() to add the effect to the end of the list
+    effectList.push_back(e);
+    // Using push_back() to add the effect to the end of the list
   }
 
   static void updateEffects() {

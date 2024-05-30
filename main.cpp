@@ -1,4 +1,5 @@
 #include "headers/effects.h"
+#include "headers/animate.h"
 #include <bits/stdc++.h>
 #include <cmath>
 #include <fstream>
@@ -165,8 +166,6 @@ public:
     if (dX == pdX && dY == pdY)
       return;
 
-    // Check all 4 corners are not in a wall
-    // 47 47, 0 47, 47 0
     int dx[] = {0, 1, 0, 1};
     int dy[] = {0, 1, 1, 0};
 
@@ -176,7 +175,7 @@ public:
 
       int grid_x = (xx + 42 * dx[i]) / 48;
       int grid_y = (yy + 42 * dy[i]) / 48;
-      DrawCircle(xx + 42 * dx[i] + 200, yy + 42 * dy[i], 5, RED);
+      // DrawCircle(xx + 42 * dx[i] + 200, yy + 42 * dy[i], 5, RED);
       // cout << grid_x << " " << grid_y << endl;
       if (prop[grid_y][grid_x] == '#')
         return;
@@ -208,14 +207,14 @@ public:
   Pacman() : Entity() {
     x = 9 * 48;
     y = 16 * 48;
-    chomp = LoadSound("../assets/sound/chomp.wav");
+    chomp = LoadSound("./assets/sound/chomp.wav");
     SetSoundVolume(chomp, 0.5);
     speed = 5;
     dX = 0;
     pdX = -1;
     dY = 0;
     pdY = 0;
-    pac_left = LoadImage("../assets/Sprite-0001.png");
+    pac_left = LoadImage("./assets/Sprite-0001.png");
     pacLeft = LoadTextureFromImage(pac_left);
   }
   Rectangle getRect() { return Rectangle{(float)x, (float)y, 48, 48}; }
@@ -305,7 +304,7 @@ public:
       while (prop[centerY + dY][centerX + dX] != '#') {
         centerY += dY;
         centerX += dX;
-        cout << centerY << " " << centerX << endl;
+        // cout << centerY << " " << centerX << endl;
       }
       coordX = centerX * 48 + 200;
       coordY = centerY * 48;
@@ -313,6 +312,12 @@ public:
       set = true;
     }
     if (set && IsKeyUp(KEY_SPACE)) {
+      Vector2 origin = {(float)x + 200, (float)y};
+      Vector2 destination = {(float)coordX, (float)coordY};
+      cout << origin.x << " " << origin.y << endl;
+      cout << destination.x << " " << destination.y << endl;
+      MovePacman *anim = new MovePacman(&pacLeft, origin, destination, pacRect);
+      AnimationManager::addAnimation(anim);
       EffectManager::addEffect(Smoke, Vector2{(float)x + 200, (float)y});
       x = coordX - 200;
       y = coordY;
@@ -365,7 +370,7 @@ public:
     start = {(float)x, (float)y};
     this->scatterLocation = scatterLocation;
     speed = 4;
-    ghostI = LoadImage("../assets/Sprite-0001.png");
+    ghostI = LoadImage("./assets/Sprite-0001.png");
     ghostT = LoadTextureFromImage(ghostI);
     GhostRect = {0, 4 * 16 + Color * 16, 16, 16};
     speed = 4;
@@ -436,34 +441,43 @@ public:
   void next(Vector2 target) {
     // Of all the directions possible, Return the direction that is NOT opposite
     // to current AND allows the Ghost to be closest
+
     int centered_x = (x + 24);
     int centered_y = (y + 24);
+
     int centered_x_grid = (x + 24) / 48;
     int centered_y_grid = (y + 24) / 48;
+
     int target_x = (target.x + 24) / 48;
     int target_y = (target.y + 24) / 48;
+
     vector<pair<int, float>> distances;
     for (int i = 0; i < 4; i++) {
-      // Make sure it is in bounds
+      // Not at home && not going in reverse 
       if (!isHome(centered_x_grid, centered_y_grid) && dx[i] == -dX &&
           dy[i] == -dY)
         continue;
+
       if (isNotValid((centered_x + dx[i] * 24) / 48,
                      (centered_y + dy[i] * 24) / 48, 22, 19))
         continue;
+
       if (prop[(centered_y + 26 * dy[i]) / 48]
               [(centered_x + 26 * dx[i]) / 48] == '#')
         continue;
+    
       // Calculate distance
+      // i direction (dx, dy)
       distances.push_back(
           {i, distance(centered_x_grid + dx[i], centered_y_grid + dy[i],
                        target_x, target_y)});
     }
+    // Ascending order sort according to the distance 
     sort(distances.begin(), distances.end(),
          [](pair<int, float> a, pair<int, float> b) {
            return a.second < b.second;
          });
-    // cout << distances.size() << endl;
+
     if (state == FRIGHTENED) {
       int randomValid = GetRandomValue(0, distances.size() - 1);
       pdX = dx[distances[randomValid].first];
@@ -502,6 +516,8 @@ public:
   }
   void Update() override {}
   void Update(Pacman &pac) {
+    // What is the next direction
+    // dX dY
     next(target(pac));
     Check();
     int centered_x = x + 24;
@@ -509,10 +525,10 @@ public:
     int i = (y + 24) / 48.0;
     int j = (x + 24) / 48.0;
     // If Right or bottom then floor
-    DrawCircle(x + 24 + 200, y + 24, 5, RED);
+    // DrawCircle(x + 24 + 200, y + 24, 5, RED);
     // cout << i + dY << " " << j + dX << endl;
     if (prop[(centered_y + 26 * dY) / 48][(centered_x + 26 * dX) / 48] != '#') {
-      DrawCircle(centered_x + 25 * dX + 200, centered_y + 25 * dY, 5, RED);
+      // DrawCircle(centered_x + 25 * dX + 200, centered_y + 25 * dY, 5, RED);
       Animate();
       x += dX * speed;
       y += dY * speed;
@@ -534,6 +550,8 @@ public:
     } else if (state == SCATTER && rand < 10) {
       setState(CHASE);
     }
+
+    // Home
     if (CheckCollisionPointRec(Vector2{(float)x, (float)y},
                                Rectangle{8 * 48, 9 * 48, 48 * 3, 48 * 2})) {
       setState(CHASE);
@@ -567,17 +585,6 @@ public:
   }
 };
 
-class Clyde : public Ghost {
-public:
-  Clyde() : Ghost(3, Vector2{0, 22 * 48}) {}
-  Vector2 chaseTarget(Pacman &pac) override {
-    if (distance(getPos().x, getPos().y, pac.getPos().x, pac.getPos().y) <
-        8 * 48)
-      return scatter();
-    return pac.getPos();
-  }
-};
-
 class Inky : public Ghost {
 public:
   Inky() : Ghost(2, Vector2{18 * 48, 22 * 48}) {}
@@ -586,35 +593,46 @@ public:
                            Vector2Multiply(pac.getDir(), {48 * 4, 48 * 4}));
   }
 };
+class Clyde : public Ghost {
+public:
+  Clyde() : Ghost(3, Vector2{0, 22 * 48}) {}
+  Vector2 chaseTarget(Pacman &pac) override {
+    if (distance(getPos().x, getPos().y, pac.getPos().x, pac.getPos().y) <
+        4*48)
+      return scatter();
+    return pac.getPos();
+  }
+};
+
 
 // Initialize the map
 list<Effect> EffectManager::effectList;
 map<EffectType, Texture2D> EffectMap::effectMap;
+unordered_multiset<Animation *> AnimationManager::animations;
 
 int main() {
   const int screenWidth = 912 + 400;
   const int screenHeight = 1056;
   InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
   InitAudioDevice();
-  Image Maze_img = LoadImage("../assets/map.png");
+  Image Maze_img = LoadImage("./assets/map.png");
   Color *img = LoadImageColors(Maze_img);
-  Texture2D Maze = LoadTexture("../assets/map.png");
-  Texture2D map = LoadTexture("../assets/tileSheet.png");
+  Texture2D Maze = LoadTexture("./assets/map.png");
+  Texture2D map = LoadTexture("./assets/tileSheet.png");
   // cout << Maze.height << " " << Maze.width << endl;
   SetTargetFPS(60);
-  Music bg_music = LoadMusicStream("../assets/sound/pacman_remix.mp3");
+  Music bg_music = LoadMusicStream("./assets/sound/pacman_remix.mp3");
   SetMusicVolume(bg_music, 0.7);
   PlayMusicStream(bg_music);
-  prop = loadVector("../assets/defaultMap.bin");
-  prop[1][1] = 'P';
-  saveVector(prop, "../assets/defaultMap.bin");
+  prop = loadVector("./assets/defaultMap.bin");
+  // prop[1][1] = 'P';
+  // saveVector(prop, "../assets/defaultMap.bin");
   Pacman pac;
   Blinky Blinky;
   Pinky Pinky;
   Inky Inky;
   Clyde Clyde;
   EffectMap::Init();
-  STATE states[] = {CHASE, FRIGHTENED, EATEN, SCATTER};
   Ghost *ghosts[] = {&Blinky, &Pinky, &Inky, &Clyde};
   int i = 0;
   bool win = false;
@@ -625,9 +643,7 @@ int main() {
     DrawMap(map);
     // DrawTexture(Maze, 0, 0, WHITE);
     // Convert score to char*
-    if (IsKeyPressed(KEY_SPACE)) {
-      Blinky.setState(FRIGHTENED);
-    }
+
     string score_str = "Score:" + to_string(score);
     string live_str = "Lives:" + to_string(Lives);
     DrawText(score_str.c_str(), 8, 5, 30, WHITE);
@@ -657,6 +673,8 @@ int main() {
                WHITE);
     }
     EffectManager::updateEffects();
+    AnimationManager::Draw();
+    AnimationManager::Update();
     EndDrawing();
   }
 
