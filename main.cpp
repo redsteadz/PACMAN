@@ -1,5 +1,6 @@
-#include "headers/effects.h"
 #include "headers/animate.h"
+#include "headers/effects.h"
+#include "headers/gui.h"
 #include <bits/stdc++.h>
 #include <cmath>
 #include <fstream>
@@ -8,6 +9,8 @@
 #include <raymath.h>
 #define INF INT_MAX
 using namespace std;
+const int screenWidth = 912 + 400;
+const int screenHeight = 1056;
 
 enum STATE { SCATTER, FRIGHTENED, CHASE, EATEN };
 
@@ -28,11 +31,9 @@ void saveVector(const vector<vector<char>> &vector,
   size_t rows = vector.size();
   size_t cols = vector[0].size();
 
-  // Write the dimensions of the vector
   file.write(reinterpret_cast<const char *>(&rows), sizeof(size_t));
   file.write(reinterpret_cast<const char *>(&cols), sizeof(size_t));
 
-  // Write the vector data
   for (const auto &row : vector) {
     file.write(row.data(), cols);
   }
@@ -65,6 +66,65 @@ vector<vector<char>> loadVector(const std::string &filename) {
 
   return vector;
 }
+
+class MapHandler {
+  TextBox TBox;
+  SmallButton CheckMark;
+  SmallButton LoadMark;
+  Texture2D *gui;
+
+public:
+  MapHandler(Texture2D *gui)
+      : TBox({8, screenHeight / 2 + 12 * 16, 190, 50}),
+        CheckMark({8, screenHeight / 2 + 12 * 16 + 50}, gui, ICON_TYPES::CHECK),
+        LoadMark({8 + 6 * 16 + 10, screenHeight / 2 + 12 * 16 + 50}, gui,
+                 ICON_TYPES::MAIL) {
+    this->gui = gui;
+  }
+  void MapEdit() {
+    // TODO: Make The Hover animation on the grid
+    Vector2 mouse = GetMousePosition();
+    // Check if the mouse is in the grid section
+    TBox.Draw();
+    TBox.Update();
+    CheckMark.Draw();
+    CheckMark.Update();
+    LoadMark.Draw();
+    LoadMark.Update();
+    string location = "./assets/" + TBox.getInput() + ".bin";
+    if (CheckMark.getPressed() && TBox.getInput() != "" && !FileExists(location.c_str())) {
+      cout << TBox.getInput() << endl;
+      saveVector(prop, location);
+      CheckMark.setPressed(false);
+    } else if (LoadMark.getPressed() && FileExists(location.c_str())) {
+      prop = loadVector("./assets/" + TBox.getInput() + ".bin");
+      LoadMark.setPressed(false);
+    }
+    if (!CheckCollisionPointRec(mouse, Rectangle{200, 0, 48 * 19, 48 * 22})) {
+      return;
+    }
+    DrawHoverRectangle(mouse);
+    // Mouse is in the Grid
+
+    // TODO: Handle Right and Left click
+    float x = floor((mouse.x - 200) / 48);
+    float y = floor((mouse.y) / 48);
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+      // cout << "Right Clicked" << endl;
+      prop[(int)y][(int)x] = ' ';
+    } else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+      prop[(int)y][(int)x] = '#';
+    }
+    // Display the save button and the Input Box Below the Edit button
+  }
+  void DrawHoverRectangle(Vector2 mouse) {
+    float x = floor((mouse.x - 200) / 48);
+    float y = floor((mouse.y) / 48);
+    DrawRectangleRoundedLines({x * 48 + 200, y * 48, 48, 48}, 0.1, 1, 5,
+                              ORANGE);
+  }
+};
+
 struct Point {
   int x, y;
   Point(int _x, int _y) : x(_x), y(_y) {}
@@ -251,10 +311,10 @@ public:
       killMode(true);
     }
 
-    DrawCircle(x + 24 + 200, y + 24, 5, RED);
+    // DrawCircle(x + 24 + 200, y + 24, 5, RED);
     // cout << i + dY << " " << j + dX << endl;
     if (prop[(centered_y + 26 * dY) / 48][(centered_x + 26 * dX) / 48] != '#') {
-      DrawCircle(centered_x + 25 * dX + 200, centered_y + 25 * dY, 5, RED);
+      // DrawCircle(centered_x + 25 * dX + 200, centered_y + 25 * dY, 5, RED);
 
       // Increase frame
       Animate();
@@ -314,8 +374,8 @@ public:
     if (set && IsKeyUp(KEY_SPACE)) {
       Vector2 origin = {(float)x + 200, (float)y};
       Vector2 destination = {(float)coordX, (float)coordY};
-      cout << origin.x << " " << origin.y << endl;
-      cout << destination.x << " " << destination.y << endl;
+      // cout << origin.x << " " << origin.y << endl;
+      // cout << destination.x << " " << destination.y << endl;
       MovePacman *anim = new MovePacman(&pacLeft, origin, destination, pacRect);
       AnimationManager::addAnimation(anim);
       EffectManager::addEffect(Smoke, Vector2{(float)x + 200, (float)y});
@@ -421,6 +481,7 @@ public:
       return Vector2{9 * 48, 9 * 48};
     switch (state) {
     case SCATTER:
+      // cout << "SCATTERING" << endl;
       return scatterLocation;
       break;
     case CHASE:
@@ -453,7 +514,7 @@ public:
 
     vector<pair<int, float>> distances;
     for (int i = 0; i < 4; i++) {
-      // Not at home && not going in reverse 
+      // Not at home && not going in reverse
       if (!isHome(centered_x_grid, centered_y_grid) && dx[i] == -dX &&
           dy[i] == -dY)
         continue;
@@ -465,19 +526,23 @@ public:
       if (prop[(centered_y + 26 * dy[i]) / 48]
               [(centered_x + 26 * dx[i]) / 48] == '#')
         continue;
-    
+
       // Calculate distance
       // i direction (dx, dy)
       distances.push_back(
           {i, distance(centered_x_grid + dx[i], centered_y_grid + dy[i],
                        target_x, target_y)});
     }
-    // Ascending order sort according to the distance 
+    // Ascending order sort according to the distance
     sort(distances.begin(), distances.end(),
          [](pair<int, float> a, pair<int, float> b) {
            return a.second < b.second;
          });
-
+    // cout << distances.size() << " " << endl;
+    if (distances.size() == 0) {
+      setState(SCATTER);
+      return;
+    }
     if (state == FRIGHTENED) {
       int randomValid = GetRandomValue(0, distances.size() - 1);
       pdX = dx[distances[randomValid].first];
@@ -559,7 +624,7 @@ public:
     if (state != EATEN &&
         CheckCollisionRecs(pac.getRect(),
                            Rectangle{(float)x, (float)y, 48, 48})) {
-      cout << "Collision" << endl;
+      // cout << "Collision" << endl;
       if (state == FRIGHTENED) {
         setState(EATEN);
       } else {
@@ -598,34 +663,34 @@ public:
   Clyde() : Ghost(3, Vector2{0, 22 * 48}) {}
   Vector2 chaseTarget(Pacman &pac) override {
     if (distance(getPos().x, getPos().y, pac.getPos().x, pac.getPos().y) <
-        4*48)
+        4 * 48)
       return scatter();
     return pac.getPos();
   }
 };
 
-
+Texture2D gui;
 // Initialize the map
 list<Effect> EffectManager::effectList;
 map<EffectType, Texture2D> EffectMap::effectMap;
 unordered_multiset<Animation *> AnimationManager::animations;
 
 int main() {
-  const int screenWidth = 912 + 400;
-  const int screenHeight = 1056;
   InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
   InitAudioDevice();
-  Image Maze_img = LoadImage("./assets/map.png");
-  Color *img = LoadImageColors(Maze_img);
-  Texture2D Maze = LoadTexture("./assets/map.png");
   Texture2D map = LoadTexture("./assets/tileSheet.png");
   // cout << Maze.height << " " << Maze.width << endl;
+  Helper::LoadIcons();
+  gui = LoadTexture("./assets/GUI.png");
+  SmallButton Pause({8, screenHeight / 2}, &gui);
+  SmallButton EditButton({8, screenHeight / 2 + 6 * 16}, &gui,
+                         ICON_TYPES::LOCK);
   SetTargetFPS(60);
   Music bg_music = LoadMusicStream("./assets/sound/pacman_remix.mp3");
   SetMusicVolume(bg_music, 0.7);
   PlayMusicStream(bg_music);
   prop = loadVector("./assets/defaultMap.bin");
-  // prop[1][1] = 'P';
+  MapHandler MapEdit(&gui);
   // saveVector(prop, "../assets/defaultMap.bin");
   Pacman pac;
   Blinky Blinky;
@@ -641,19 +706,26 @@ int main() {
     UpdateMusicStream(bg_music);
     ClearBackground(BLACK);
     DrawMap(map);
-    // DrawTexture(Maze, 0, 0, WHITE);
-    // Convert score to char*
+    Pause.Draw();
+    Pause.Update();
 
+    EditButton.Draw();
+    EditButton.Update();
     string score_str = "Score:" + to_string(score);
     string live_str = "Lives:" + to_string(Lives);
     DrawText(score_str.c_str(), 8, 5, 30, WHITE);
     DrawText(live_str.c_str(), 8, 30, 30, WHITE);
     pac.Draw();
+    for (int i = 0; i < 4; i++)
+      ghosts[i]->Draw();
     pac.Control();
-    if (!win) {
+    if (EditButton.getPressed()) {
+      MapEdit.MapEdit();
+    }
+    if (!win && !Pause.getPressed()) {
       pac.Update();
       for (int i = 0; i < 4; i++) {
-        ghosts[i]->Draw();
+        // ghosts[i]->Draw();
         ghosts[i]->Update(pac);
         if (pac.getEaten()) {
           ghosts[i]->setState(FRIGHTENED);

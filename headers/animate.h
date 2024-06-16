@@ -70,7 +70,7 @@ public:
     currentFrame = 0;
   }
   void Draw() override {
-    cout << "PERSIST ANIMTATION: " << destination.x << " " << destination.y << endl;
+    // cout << "PERSIST ANIMTATION: " << destination.x << " " << destination.y << endl;
     DrawTexturePro(*sprite, source, destination, Vector2{0, 0}, 0, WHITE);
   };
   bool Update() override {
