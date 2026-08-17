@@ -1,29 +1,43 @@
-# Raylib-CPP-Starter-Template-for-VSCODE-V2
-Raylib C++ Starter Template for Visual Studio Code on Windows.
-This demo project contains a bouncing ball raylib example program.
-It works with raylib version 5.0. Tested on both Windows 10 and Windows 11.
+# PACMAN
 
-# How to use this template
-1. Double click on the main.code-workspace file. This will open the template in VS Code.
-2. From the Explorer Window of VS Code navigate to the src folder and double click on the main.cpp file.
-3. Press F5 on the keyboard to compile and run the program.
+![PACMAN gameplay preview](preview.jpg)
 
-# What's changed
-The template now uses folders for better organizion of the files. So, all the source code now lives in the src folder.
+A Pac-Man-inspired arcade game built in C++ with [raylib](https://www.raylib.com/). The project explores grid movement, distinct ghost targeting rules, game-state transitions, visual effects, and an in-game map editor.
 
-# Video Tutorial
+## Highlights
 
-<p align="center">
-  <img src="preview.jpg" alt="" width="800">
-</p>
+- Four ghosts with chase, scatter, frightened, and eaten states
+- Different targeting behaviour for Blinky, Pinky, Inky, and Clyde
+- Pellets, score, lives, power states, pause support, music, and sound effects
+- Animated movement and impact effects
+- A built-in editor for loading and saving binary map layouts
 
-<p align="center">
-🎥 <a href="https://www.youtube.com/watch?v=PaAcVk5jUd8">Video Tutorial on YouTube</a>
-</p>
+## Controls
 
-<br>
-<br>
-<p align="center">
-| 📺 <a href="https://www.youtube.com/channel/UC3ivOTE5EgpmF2DHLBmWIWg">My YouTube Channel</a>
-| 🌍 <a href="http://www.educ8s.tv">My Website</a> | <br>
-</p>
+| Input | Action |
+| --- | --- |
+| `W` `A` `S` `D` | Change Pac-Man's direction |
+| `Space` | Use Pac-Man's limited movement boost |
+| Pause button | Pause or resume the simulation |
+| Edit button | Open the map editor |
+
+The map editor exposes its save/load and tile controls in the game UI.
+
+## Build and run
+
+You need a C++ compiler, CMake, and a raylib installation discoverable by CMake.
+
+~~~bash
+git clone https://github.com/redsteadz/PACMAN.git
+cd PACMAN
+cmake -S . -B build
+cmake --build build
+cd build
+./Pacman
+~~~
+
+CMake copies the required `assets/` directory into the build directory.
+
+## Status
+
+This is a personal game project and learning playground rather than a production Pac-Man implementation. The gameplay, AI experiments, effects, and editor are all contained in the current executable.
