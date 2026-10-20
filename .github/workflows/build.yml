@@ -149,8 +149,11 @@ jobs:
       - name: Smoke test (offscreen)
         if: matrix.id == 'linux'
         run: |
-          # Runs the real binary long enough to load every asset and open the
-          # window. A missing texture or sound shows up as an error log line.
+          # Runs the real binary long enough to open the window and load every
+          # asset. The runner has no sound card, so ALSA/PulseAudio chatter and
+          # raylib's "Failed to create buffer" warnings are expected here and
+          # must not be treated as failures - only genuine asset load failures
+          # should break the build.
           set +e
           xvfb-run -a --server-args="-screen 0 1280x1024x24" \
             timeout 10 ./dist/bin/Pacman > smoke.log 2>&1
@@ -159,13 +162,15 @@ jobs:
           cat smoke.log
           # 124 means the timeout fired while the game was still running: success.
           if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then
-            echo "error: smoke test exited with status $status" >&2
+            echo "::error::smoke test exited with status $status"
             exit 1
           fi
-          if grep -iqE "failed to load|error:" smoke.log; then
-            echo "error: the game reported asset errors" >&2
+          if grep -qE "Failed to load (texture|image|sound|music)|FILEIO: Failed to open" smoke.log; then
+            echo "::error::the game could not load an asset"
+            grep -E "Failed to load|FILEIO: Failed to open" smoke.log
             exit 1
           fi
+          echo "All assets loaded."
 
       - name: Package
         env:

@@ -42,6 +42,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 # with no matching -L, which fails at link time with a confusing error.
 # ---------------------------------------------------------------------------
 
+# When raylib is consumed as a bare library file rather than as a CMake target,
+# its usage requirements do not come along for the ride. raylib's own build
+# lists ${OPENGL_LIBRARIES} and winmm on Windows for exactly this reason:
+# rcore calls timeBeginPeriod()/timeEndPeriod() from the WinMM API.
+function(pacman_add_raylib_system_libs target)
+    if(WIN32)
+        target_link_libraries(${target} INTERFACE opengl32 winmm)
+    endif()
+endfunction()
+
 set(RAYLIB_INCLUDE_DIR "" CACHE PATH "Explicit path to raylib.h")
 set(RAYLIB_LIBRARY    "" CACHE FILEPATH "Explicit path to the raylib library")
 
@@ -52,6 +62,7 @@ if(RAYLIB_INCLUDE_DIR AND RAYLIB_LIBRARY AND EXISTS "${RAYLIB_LIBRARY}")
     add_library(pacman_raylib INTERFACE)
     target_include_directories(pacman_raylib SYSTEM INTERFACE "${RAYLIB_INCLUDE_DIR}")
     target_link_libraries(pacman_raylib INTERFACE "${RAYLIB_LIBRARY}")
+    pacman_add_raylib_system_libs(pacman_raylib)
     set(PACMAN_RAYLIB_TARGET pacman_raylib)
 elseif(PACMAN_USE_BUNDLED_RAYLIB)
     include(FetchContent)
@@ -96,6 +107,7 @@ else()
                 add_library(pacman_raylib INTERFACE)
                 target_include_directories(pacman_raylib SYSTEM INTERFACE "${RAYLIB_INCLUDE_DIR_FOUND}")
                 target_link_libraries(pacman_raylib INTERFACE "${RAYLIB_LIBRARY_FOUND}")
+                pacman_add_raylib_system_libs(pacman_raylib)
                 set(PACMAN_RAYLIB_TARGET pacman_raylib)
             else()
                 message(FATAL_ERROR
