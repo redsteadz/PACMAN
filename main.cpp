@@ -1,6 +1,7 @@
 #include "headers/animate.h"
 #include "headers/console.h"
 #include "headers/effects.h"
+#include "headers/event.h"
 #include "headers/gui.h"
 #include "headers/raylib_compat.h"
 #include <bits/stdc++.h>
@@ -281,6 +282,10 @@ public:
   }
   Rectangle getRect() { return Rectangle{(float)x, (float)y, 48, 48}; }
   Vector2 getDir() { return Vector2{(float)dX, (float)dY}; };
+  // Exposed so the attract screen can animate the real sprite.
+  Texture2D Sprite() { return pacLeft; }
+  // Reused as the countdown beep on the last ten seconds.
+  Sound Chomp() { return chomp; }
   void Reset() {
     x = 9 * 48;
     y = 16 * 48;
@@ -388,17 +393,19 @@ public:
     }
   }
 
+  // Direction input. WASD is kept because the original game used it, and the
+  // arrow keys are added because that is what a first-time player reaches for.
   void Control() {
-    if (IsKeyPressed(KEY_W)) {
+    if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
       pdX = 0;
       pdY = -1;
-    } else if (IsKeyPressed(KEY_A)) {
+    } else if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
       pdX = -1;
       pdY = 0;
-    } else if (IsKeyPressed(KEY_S)) {
+    } else if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
       pdX = 0;
       pdY = 1;
-    } else if (IsKeyPressed(KEY_D)) {
+    } else if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
       pdX = 1;
       pdY = 0;
     }
@@ -677,6 +684,276 @@ list<Effect> EffectManager::effectList;
 map<EffectType, Texture2D> EffectMap::effectMap;
 unordered_multiset<Animation *> AnimationManager::animations;
 
+// ===========================================================================
+//  Event mode: attract screen, HUD and results screen
+//
+//  These screens sit on top of the original game. Nothing about the maze,
+//  movement or ghost AI changed; this only replaces the "press start and
+//  figure it out" shell with one a walk-up stranger can use unassisted.
+// ===========================================================================
+
+namespace event {
+
+// How many dots, power tiles and ghost tiles the current map started with.
+int tilesAtRoundStart = 1;
+
+int CountUneatenTiles() {
+  int n = 0;
+  for (int i = 0; i < 22; i++)
+    for (int j = 0; j < 19; j++) {
+      char c = prop[i][j];
+      if (c == ' ' || c == '0' || c == 'P')
+        n++;
+    }
+  return n;
+}
+
+// 0-100, measured against the board as it was when the round started so a
+// custom map still reports sensibly.
+int PercentCleared() {
+  if (tilesAtRoundStart <= 0)
+    return 0;
+  int pct = 100 * (tilesAtRoundStart - CountUneatenTiles()) / tilesAtRoundStart;
+  return pct < 0 ? 0 : (pct > 100 ? 100 : pct);
+}
+
+// A soft pulse used for anything that should feel alive but not distracting.
+float Pulse(float speed = 3.0f) {
+  return 0.5f + 0.5f * sinf((float)GetTime() * speed);
+}
+
+int CenterX() { return screenWidth / 2; }
+
+// --- Attract ---------------------------------------------------------------
+
+void DrawAttract(Pacman &pac) {
+  // Dim the real maze so the screen never looks like a crashed game.
+  DrawRectangle(0, 0, screenWidth, screenHeight, Color{0, 0, 0, 205});
+
+  const int px = 300, py = 46, pw = 712, ph = 964;
+  const int cx = px + pw / 2;
+  Panel(px, py, pw, ph);
+
+  // Title, with the real Pac-Man sprite chewing beside it.
+  event::DrawCenteredTextShadow("PAC-MAN", cx, py + 26, 62, GOLD);
+  int chomp = (int)(Pulse(6.0f) * 2.99f);
+  DrawTexturePro(pac.Sprite(), Rectangle{(float)chomp * 16, 0, 16, 16},
+                 Rectangle{(float)(cx - MeasureText("PAC-MAN", 62) / 2 - 96),
+                           (float)(py + 52), 56, 56},
+                 {0, 0}, 0, WHITE);
+  DrawTexturePro(pac.Sprite(), Rectangle{(float)((chomp + 1) % 3) * 16, 0, 16, 16},
+                 Rectangle{(float)(cx + MeasureText("PAC-MAN", 62) / 2 + 34),
+                           (float)(py + 52), 56, 56},
+                 {0, 0}, 0, WHITE);
+
+  event::DrawCenteredText("Eat every dot.  Dodge the ghosts.", cx, py + 122, 22,
+                          event::RGB(200, 200, 220));
+  event::DrawCenteredText("CLEAR THE BOARD TO WIN", cx, py + 158, 30, GOLD);
+
+  // How to play.
+  DrawRectangle(px + 46, py + 208, pw - 92, 3, Color{255, 255, 255, 40});
+  event::DrawCenteredText("HOW TO PLAY", cx, py + 224, 24, YELLOW);
+  event::DrawCenteredText("W A S D   or   ARROW KEYS    move", cx, py + 262, 21,
+                          WHITE);
+  event::DrawCenteredText("SPACE    speed boost (limited uses)", cx, py + 294, 21,
+                          WHITE);
+  event::DrawCenteredText("Big dot    lets you eat a ghost", cx, py + 326, 21,
+                          WHITE);
+
+  DrawRectangle(px + 46, py + 366, pw - 92, 3, Color{255, 255, 255, 40});
+
+  // Best scores, so there is a reason to come back for another go.
+  event::DrawCenteredText("BEST SCORES", cx, py + 382, 24, YELLOW);
+  const std::vector<int> &entries = session.board.Entries();
+  if (entries.empty()) {
+    event::DrawCenteredText("no scores yet - be the first", cx, py + 424, 20,
+                            event::RGB(150, 150, 170));
+  } else {
+    int row = py + 418;
+    int place = 1;
+    for (int s : entries) {
+      char line[64];
+      snprintf(line, sizeof(line), "%d.      %d", place++, s);
+      DrawText(line, cx - 110, row, 21, WHITE);
+      row += 27;
+      if (place > (int)kMaxScores)
+        break;
+    }
+  }
+
+  // Rewards - the reason to get close even without winning.
+  event::DrawCenteredText("REVOLVES EARNED", cx, py + 570, 24, YELLOW);
+  struct Row {
+    const char *left;
+    int amount;
+  };
+  static const Row rows[] = {
+      {"Clear the whole board", 5},
+      {"Eat 90% of the board", 3},
+      {"Eat 70% of the board", 2},
+      {"Eat 40% of the board", 1},
+  };
+  int ry = py + 606;
+  for (const Row &r : rows) {
+    char line[80];
+    snprintf(line, sizeof(line), "%s  ........  %d", r.left, r.amount);
+    DrawText(line, cx - 200, ry, 21, event::RGB(220, 220, 235));
+    ry += 30;
+  }
+
+  // Call to action.
+  float p = Pulse(4.0f);
+  Color prompt = Color{(unsigned char)(255), (unsigned char)(255),
+                       (unsigned char)(140 + 115 * p), 255};
+  event::DrawCenteredTextShadow("PRESS ANY KEY TO PLAY", cx, py + 742, 40,
+                                 prompt);
+  event::DrawCenteredText("(or click anywhere)", cx, py + 790, 20,
+                          event::RGB(140, 140, 165));
+
+  // A row of the four ghosts, drifting gently, so the screen has motion.
+  static const Color ghostColors[] = {RED, PINK, SKYBLUE, ORANGE};
+  float t = (float)GetTime();
+  for (int i = 0; i < 4; i++) {
+    float wob = sinf(t * 2.0f + i) * 10.0f;
+    DrawCircleV(Vector2{(float)(px + 110 + i * 140), (float)(py + ph - 60 + wob)},
+                26.0f, ghostColors[i]);
+    // Eyes.
+    DrawCircleV(Vector2{(float)(px + 104 + i * 140), (float)(py + ph - 66 + wob)},
+                6.0f, WHITE);
+    DrawCircleV(Vector2{(float)(px + 120 + i * 140), (float)(py + ph - 66 + wob)},
+                6.0f, WHITE);
+    DrawCircleV(Vector2{(float)(px + 106 + i * 140), (float)(py + ph - 66 + wob)},
+                3.0f, event::RGB(20, 20, 40));
+    DrawCircleV(Vector2{(float)(px + 122 + i * 140), (float)(py + ph - 66 + wob)},
+                3.0f, event::RGB(20, 20, 40));
+  }
+}
+
+// --- Heads-up display ------------------------------------------------------
+
+void DrawHUD(Pacman &pac, int livesLeft) {
+  // Score and lives in the left gutter, where the original game put them.
+  char scoreLine[64];
+  snprintf(scoreLine, sizeof(scoreLine), "SCORE %d", score);
+  DrawText(scoreLine, 8, 8, 26, WHITE);
+
+  for (int i = 0; i < livesLeft && i < 5; i++)
+    DrawCircleV(Vector2{26.0f + (float)i * 40.0f, 78.0f}, 15.0f, GOLD);
+
+  // Board progress, so "getting close" is visible while playing.
+  int pct = PercentCleared();
+  char progLine[64];
+  snprintf(progLine, sizeof(progLine), "BOARD %d%%", pct);
+  DrawText(progLine, 8, 116, 22, event::RGB(190, 190, 210));
+  DrawRectangleRec(Rectangle{8.0f, 148.0f, 168.0f, 16.0f}, event::RGB(40, 40, 60));
+  DrawRectangleRec(Rectangle{8.0f, 148.0f, 168.0f * pct / 100.0f, 16.0f}, LIME);
+
+  // Countdown. Pulses red and beeps through the last ten seconds.
+  bool urgent = event::session.roundLeft <= 10.0f;
+  float p = Pulse(8.0f);
+  Color timeColor = urgent
+                        ? Color{(unsigned char)(255),
+                                (unsigned char)(90 + 80 * p),
+                                (unsigned char)(90), 255}
+                        : WHITE;
+  int secs = (int)ceilf(event::session.roundLeft);
+  char timeLine[32];
+  snprintf(timeLine, sizeof(timeLine), "%d", secs);
+
+  // The countdown sits on top of the maze, which is far too busy to read it
+  // against, so give it its own solid plate.
+  const int plateW = 260, plateH = 100;
+  DrawRectangleRec(
+      Rectangle{(float)((screenWidth - plateW) / 2), 0.0f, (float)plateW,
+                (float)plateH},
+      event::RGB(10, 10, 24, 225));
+  DrawRectangleLinesEx(
+      Rectangle{(float)((screenWidth - plateW) / 2), 0.0f, (float)plateW,
+                (float)plateH},
+      2, urgent ? event::RGB(255, 90, 90) : event::RGB(255, 255, 255, 60));
+
+  int tw = MeasureText(timeLine, 54);
+  DrawText(timeLine, (screenWidth - tw) / 2, 12, 54, timeColor);
+  DrawText("SECONDS LEFT", (screenWidth - MeasureText("SECONDS LEFT", 18)) / 2,
+           70, 18, event::RGB(180, 180, 200));
+
+  if (urgent && secs != event::session.lastTickSecond && secs > 0) {
+    event::session.lastTickSecond = secs;
+    PlaySound(pac.Chomp());
+  }
+}
+
+// --- Results ---------------------------------------------------------------
+
+void DrawResults() {
+  DrawRectangle(0, 0, screenWidth, screenHeight, Color{0, 0, 0, 210});
+
+  const int px = 366, py = 120, pw = 580, ph = 744;
+  const int cx = px + pw / 2;
+  Panel(px, py, pw, ph);
+
+  const char *outcome;
+  if (session.reason == EndReason::ClearedBoard)
+    outcome = "BOARD CLEARED!";
+  else if (session.reason == EndReason::OutOfLives)
+    outcome = "OUT OF LIVES";
+  else
+    outcome = "TIME UP";
+
+  Color accent = session.reward.accent;
+  Color lit = event::RGB(accent.r, accent.g, accent.b);
+  event::DrawCenteredTextShadow(outcome, cx, py + 22, 42, lit);
+  event::DrawCenteredText(session.reward.detail, cx, py + 76, 20,
+                          event::RGB(190, 190, 210));
+
+  // The payout, as a badge. This is the bit the event actually cares about.
+  int badgeY = py + 200;
+  int badgeR = 90;
+  DrawCircleV(Vector2{(float)cx, (float)badgeY}, (float)badgeR,
+              Color{accent.r, accent.g, accent.b, 60});
+  DrawCircleLinesV(Vector2{(float)cx, (float)badgeY}, (float)badgeR, lit);
+  char amount[16];
+  snprintf(amount, sizeof(amount), "%d", session.reward.revolves);
+  int aw = MeasureText(amount, 76);
+  DrawText(amount, cx - aw / 2, badgeY - 44, 76, lit);
+  event::DrawCenteredText("REVOLVES", cx, badgeY + badgeR + 2, 22,
+                          event::RGB(210, 210, 230));
+
+  // What they scored.
+  DrawRectangle(px + 40, py + 338, pw - 80, 3, Color{255, 255, 255, 40});
+  char line[96];
+  snprintf(line, sizeof(line), "SCORE            %d", session.finalScore);
+  DrawText(line, px + 70, py + 360, 24, WHITE);
+  snprintf(line, sizeof(line), "BOARD EATEN      %d%%", session.percentCleared);
+  DrawText(line, px + 70, py + 398, 24, WHITE);
+  snprintf(line, sizeof(line), "BEST             %d", session.board.Best());
+  DrawText(line, px + 70, py + 436, 24, event::RGB(190, 190, 210));
+
+  if (session.newBest) {
+    float sp = Pulse(6.0f);
+    event::DrawCenteredText(
+        "NEW HIGH SCORE!", cx, py + 486,
+        30, Color{(unsigned char)(255), (unsigned char)(230),
+                  (unsigned char)(80 + 100 * sp), 255});
+  }
+
+  // Play again, or wait for the screen to reset itself.
+  int left = (int)ceilf(session.resultsLeft);
+  snprintf(line, sizeof(line), "back to the menu in %d", left);
+  event::DrawCenteredText(line, cx, py + 546, 20, event::RGB(150, 150, 170));
+  float fill = session.resultsLeft / kResultsSeconds;
+  DrawRectangleRec(Rectangle{(float)(px + 60), (float)(py + 580),
+                             (float)(pw - 120), 10},
+                   event::RGB(50, 50, 70));
+  DrawRectangleRec(Rectangle{(float)(px + 60), (float)(py + 580),
+                             (float)(pw - 120) * fill, 10},
+                   lit);
+
+  event::DrawCenteredTextShadow("PRESS ANY KEY", cx, py + 626, 34, WHITE);
+}
+
+}  // namespace event
+
 int main() {
   AttachParentConsole();
 
@@ -690,22 +967,22 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
+  InitWindow(screenWidth, screenHeight, "PAC-MAN");
   InitAudioDevice();
+  SetTargetFPS(60);
+
   Texture2D map = LoadTexture("./assets/tileSheet.png");
-  // cout << Maze.height << " " << Maze.width << endl;
   Helper::LoadIcons();
   gui = LoadTexture("./assets/GUI.png");
   SmallButton Pause({8, screenHeight / 2}, &gui);
   SmallButton EditButton({8, screenHeight / 2 + 6 * 16}, &gui,
                          ICON_TYPES::LOCK);
-  SetTargetFPS(60);
   Music bg_music = LoadMusicStream("./assets/sound/pacman_remix.mp3");
   SetMusicVolume(bg_music, 0.7);
   PlayMusicStream(bg_music);
   prop = loadVector("./assets/defaultMap.bin");
   MapHandler MapEdit(&gui);
-  // saveVector(prop, "../assets/defaultMap.bin");
+
   Pacman pac;
   Blinky Blinky;
   Pinky Pinky;
@@ -713,58 +990,162 @@ int main() {
   Clyde Clyde;
   EffectMap::Init();
   Ghost *ghosts[] = {&Blinky, &Pinky, &Inky, &Clyde};
+
   bool win = false;
+  float hitPause = 0.0f;
+  int livesBefore = Lives;
+
+  event::session.Begin();
+
+  auto resetBoard = [&]() {
+    prop = loadVector("./assets/defaultMap.bin");
+    score = 0;
+    Lives = event::kStartingLives;
+    Power = 3;
+    win = false;
+    hitPause = 0.0f;
+    livesBefore = Lives;
+    pac.Reset();
+    for (int i = 0; i < 4; i++)
+      ghosts[i]->Reset();
+    event::tilesAtRoundStart = event::CountUneatenTiles();
+  };
+
   while (!WindowShouldClose()) {
     BeginDrawing();
     UpdateMusicStream(bg_music);
     ClearBackground(BLACK);
-    DrawMap(map);
-    Pause.Draw();
-    Pause.Update();
 
-    EditButton.Draw();
-    EditButton.Update();
-    string score_str = "Score:" + to_string(score);
-    string live_str = "Lives:" + to_string(Lives);
-    DrawText(score_str.c_str(), 8, 5, 30, WHITE);
-    DrawText(live_str.c_str(), 8, 30, 30, WHITE);
-    pac.Draw();
-    for (int i = 0; i < 4; i++)
-      ghosts[i]->Draw();
-    pac.Control();
-    if (EditButton.getPressed()) {
-      MapEdit.MapEdit();
+    if (!event::kEnabled) {
+      // Original single-session behaviour, kept intact.
+      DrawMap(map);
+      Pause.Draw();
+      Pause.Update();
+      EditButton.Draw();
+      EditButton.Update();
+      DrawText(("Score:" + to_string(score)).c_str(), 8, 5, 30, WHITE);
+      DrawText(("Lives:" + to_string(Lives)).c_str(), 8, 30, 30, WHITE);
+      pac.Draw();
+      for (int i = 0; i < 4; i++)
+        ghosts[i]->Draw();
+      pac.Control();
+      if (EditButton.getPressed())
+        MapEdit.MapEdit();
+      if (!win && !Pause.getPressed()) {
+        pac.Update();
+        for (int i = 0; i < 4; i++) {
+          ghosts[i]->Update(pac);
+          if (pac.getEaten())
+            ghosts[i]->setState(FRIGHTENED);
+          else if (pac.killMode())
+            ghosts[i]->setState(EATEN);
+        }
+        if (pac.getEaten())
+          pac.setEaten(false);
+        else if (pac.killMode())
+          pac.killMode(false);
+        if (score == 3730)
+          win = true;
+      }
+      if (win)
+        DrawText("YOU WIN", (screenWidth - 120) / 2, screenHeight / 2, 30, WHITE);
+      EffectManager::updateEffects();
+      AnimationManager::Draw();
+      AnimationManager::Update();
+      EndDrawing();
+      continue;
     }
-    if (!win && !Pause.getPressed()) {
-      pac.Update();
-      for (int i = 0; i < 4; i++) {
-        // ghosts[i]->Draw();
-        ghosts[i]->Update(pac);
-        if (pac.getEaten()) {
-          ghosts[i]->setState(FRIGHTENED);
-        } else if (pac.killMode()) {
-          ghosts[i]->setState(EATEN);
+
+    event::Change change = event::session.Tick(score, event::PercentCleared());
+
+    if (change == event::Change::StartRound) {
+      resetBoard();
+    }
+
+    if (change == event::Change::FinishRound) {
+      event::session.Finish(event::EndReason::TimeUp, score, event::PercentCleared());
+    }
+
+    switch (event::session.screen) {
+      case event::Screen::Attract: {
+        DrawMap(map);
+        event::DrawAttract(pac);
+        break;
+      }
+
+      case event::Screen::Playing: {
+        DrawMap(map);
+        // The editor and its buttons are hidden here: a stranger clicking
+        // around should never end up editing or saving a map.
+        pac.Draw();
+        for (int i = 0; i < 4; i++)
+          ghosts[i]->Draw();
+        event::DrawHUD(pac, Lives);
+        EffectManager::updateEffects();
+        AnimationManager::Draw();
+        AnimationManager::Update();
+        break;
+      }
+
+      case event::Screen::Results: {
+        DrawMap(map);
+        pac.Draw();
+        for (int i = 0; i < 4; i++)
+          ghosts[i]->Draw();
+        EffectManager::updateEffects();
+        AnimationManager::Draw();
+        AnimationManager::Update();
+        event::DrawResults();
+        break;
+      }
+    }
+
+    // Simulation only runs while a round is live.
+    if (event::session.screen == event::Screen::Playing) {
+      if (hitPause > 0.0f) {
+        hitPause -= GetFrameTime();
+        if (fmod((float)GetTime(), 0.24f) < 0.12f)
+          DrawText("OUCH!", (screenWidth - MeasureText("OUCH!", 48)) / 2,
+                   screenHeight / 2 - 60, 48, RED);
+      } else {
+        pac.Control();
+        pac.Update();
+        for (int i = 0; i < 4; i++) {
+          ghosts[i]->Update(pac);
+          if (pac.getEaten())
+            ghosts[i]->setState(FRIGHTENED);
+          else if (pac.killMode())
+            ghosts[i]->setState(EATEN);
+        }
+        if (pac.getEaten())
+          pac.setEaten(false);
+        else if (pac.killMode())
+          pac.killMode(false);
+
+        // A ghost got us.
+        if (Lives < livesBefore) {
+          livesBefore = Lives;
+          hitPause = 1.1f;
+          if (Lives <= 0)
+            event::session.Finish(event::EndReason::OutOfLives, score,
+                           event::PercentCleared());
+        }
+
+        // Every dot eaten. The original compared scores with ==, which skipped
+        // the target whenever a ghost was eaten first and so made winning
+        // nearly impossible.
+        if (!win && score >= event::kScoreToClearBoard) {
+          win = true;
+          event::session.Finish(event::EndReason::ClearedBoard, score, 100);
         }
       }
-      if (pac.getEaten())
-        pac.setEaten(false);
-      else if (pac.killMode())
-        pac.killMode(false);
-      if (score == 3730)
-        win = true;
     }
-    if (win) {
-      DrawText("YOU WIN", (screenWidth - 120) / 2, (screenHeight / 2), 30,
-               WHITE);
-    }
-    EffectManager::updateEffects();
-    AnimationManager::Draw();
-    AnimationManager::Update();
+
     EndDrawing();
+
   }
 
   UnloadMusicStream(bg_music);
-
   CloseWindow();
   return 0;
 }
