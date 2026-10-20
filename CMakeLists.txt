@@ -197,13 +197,15 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/assets/"
     DESTINATION assets
     USE_SOURCE_PERMISSIONS)
 
-if(WIN32)
-    # Ship the MinGW runtime next to the executable so the bundle runs as-is.
+if(WIN32 AND NOT PACMAN_STATIC_RUNTIME)
+    # A non-static MinGW build needs the GCC runtime beside the executable.
+    # A fully static build (PACMAN_STATIC_RUNTIME=ON, which is what the release
+    # workflow uses) carries its own runtime and needs none of these.
     foreach(_dll libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll)
         find_file(PACMAN_MINGW_DLL_${_dll} NAMES ${_dll}
                   HINTS ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES})
         if(PACMAN_MINGW_DLL_${_dll})
-            install(FILES "${PACMAN_MINGW_DLL_${_dll}}" DESTINATION bin OPTIONAL)
+            install(FILES "${PACMAN_MINGW_DLL_${_dll}}" DESTINATION . OPTIONAL)
         endif()
     endforeach()
 endif()
