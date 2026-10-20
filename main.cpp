@@ -1,6 +1,7 @@
 #include "headers/animate.h"
 #include "headers/effects.h"
 #include "headers/gui.h"
+#include "headers/raylib_compat.h"
 #include <bits/stdc++.h>
 #include <cmath>
 #include <fstream>
@@ -120,8 +121,8 @@ public:
   void DrawHoverRectangle(Vector2 mouse) {
     float x = floor((mouse.x - 200) / 48);
     float y = floor((mouse.y) / 48);
-    DrawRectangleRoundedLines({x * 48 + 200, y * 48, 48, 48}, 0.1, 1, 5,
-                              ORANGE);
+    DrawRectangleRoundedLinesCompat({x * 48 + 200, y * 48, 48, 48}, 0.1, 1, 5,
+                                    ORANGE);
   }
 };
 
@@ -699,7 +700,6 @@ int main() {
   Clyde Clyde;
   EffectMap::Init();
   Ghost *ghosts[] = {&Blinky, &Pinky, &Inky, &Clyde};
-  int i = 0;
   bool win = false;
   while (!WindowShouldClose()) {
     BeginDrawing();

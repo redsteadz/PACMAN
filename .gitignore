@@ -1,5 +1,31 @@
+# Build output
+build/
+build-*/
+cmake-build-*/
+out/
+dist/
+
+# CMake / IDE generated files
+compile_commands.json
+CMakeUserPresets.json
+.cache/
+*.user
+
+# Binaries
 *.exe
-*.dsym
-main
-build/**
-CMakeLists.txt
+*.dSYM/
+*.pdb
+*.ilk
+*.o
+*.obj
+Pacman
+Chess
+PuzzledChess
+
+# MinGW / MSVC runtime dumps
+*.dll
+!lib/*.dll
+
+# OS noise
+.DS_Store
+Thumbs.db

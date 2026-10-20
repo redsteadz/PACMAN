@@ -34,7 +34,7 @@ class Effect {
 
 public:
   Effect(EffectType effect, Vector2 position)
-      : effect(effect), position(position) {
+      : position(position), effect(effect) {
     currentSpriteFrame = 0;
     maxFrames = EffectMap::effectMap[effect].width /
                 EffectMap::effectMap[effect].height;

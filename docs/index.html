@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PACMAN &mdash; Downloads</title>
+<meta name="description" content="Download PACMAN for Windows and Linux. A Pac-Man inspired arcade game built in C++ with raylib.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127918;</text></svg>">
+<style>
+  :root {
+    --bg: #0a0a12;
+    --bg-soft: #12121e;
+    --card: #161625;
+    --line: #262640;
+    --text: #ececf5;
+    --muted: #9a9ab5;
+    --accent: #ffcc00;
+    --accent-2: #ff7b00;
+    --ok: #37d67a;
+    --radius: 14px;
+    --max: 1080px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 520px at 50% -10%, rgba(255, 204, 0, .13), transparent 60%),
+      radial-gradient(900px 500px at 100% 10%, rgba(0, 168, 255, .10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); }
+
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- header ---------- */
+  header {
+    border-bottom: 1px solid var(--line);
+    background: rgba(10, 10, 18, .8);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .nav {
+    display: flex; align-items: center; gap: 18px;
+    padding: 14px 0;
+  }
+  .brand {
+    font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    text-decoration: none; color: var(--text); font-size: 15px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .brand .dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 12px var(--accent);
+  }
+  .nav nav { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+  .nav nav a {
+    color: var(--muted); text-decoration: none; font-size: 14.5px;
+  }
+  .nav nav a:hover { color: var(--text); }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid; grid-template-columns: 1.15fr .85fr;
+    gap: 44px; align-items: center; padding: 64px 0 56px;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); background: rgba(255, 204, 0, .09);
+    border: 1px solid rgba(255, 204, 0, .28);
+    padding: 6px 13px; border-radius: 999px; margin-bottom: 18px;
+  }
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 3.7rem);
+    line-height: 1.05; margin: 0 0 14px;
+    letter-spacing: -.02em;
+    background: linear-gradient(100deg, var(--accent), var(--accent-2) 55%, #ff4d6d);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 26px; max-width: 46ch; }
+
+  .shot {
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+    background: var(--card);
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  /* ---------- buttons ---------- */
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 22px; border-radius: 11px;
+    font-weight: 650; font-size: 15px; text-decoration: none;
+    border: 1px solid transparent; cursor: pointer;
+    transition: transform .14s ease, filter .14s ease, border-color .14s ease;
+  }
+  .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #17170a;
+  }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    border-color: var(--line);
+  }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .btn svg { flex: none; }
+
+  /* ---------- sections ---------- */
+  section { padding: 52px 0; border-top: 1px solid var(--line); }
+  h2 {
+    font-size: 1.55rem; margin: 0 0 8px; letter-spacing: -.01em;
+  }
+  .section-lead { color: var(--muted); margin: 0 0 28px; max-width: 62ch; }
+
+  .grid { display: grid; gap: 18px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 1.08rem; }
+  .card p { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; }
+
+  .dl {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-radius: 11px; padding: 15px 17px; margin-bottom: 10px;
+    text-decoration: none; color: var(--text);
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .dl:hover { border-color: var(--accent); transform: translateX(3px); }
+  .dl .meta { margin-left: auto; text-align: right; }
+  .dl .size { color: var(--muted); font-size: 12.5px; display: block; }
+
+  .pill {
+    display: inline-block; font-size: 11.5px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 6px;
+    background: rgba(55, 214, 122, .14); color: var(--ok);
+    border: 1px solid rgba(55, 214, 122, .3);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+  td:first-child { white-space: nowrap; }
+  kbd {
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-bottom-width: 2px; border-radius: 6px;
+    padding: 2px 8px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  pre {
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-radius: 11px; padding: 16px 18px; overflow-x: auto;
+    font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #d7d7e8; margin: 0 0 14px;
+  }
+  pre .c { color: var(--muted); }
+
+  .note {
+    border-left: 3px solid var(--accent);
+    background: rgba(255, 204, 0, .06);
+    padding: 14px 18px; border-radius: 0 10px 10px 0;
+    color: var(--muted); font-size: 14.5px; margin-top: 20px;
+  }
+  .note strong { color: var(--text); }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 30px 0 46px; color: var(--muted); font-size: 14px;
+  }
+  footer .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--text); }
+  footer .sep { opacity: .4; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding: 44px 0 40px; gap: 32px; }
+    .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    .nav nav { gap: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn:hover, .dl:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top"><span class="dot"></span> Pacman</a>
+    <nav>
+      <a href="#download">Download</a>
+      <a href="#howto">How to play</a>
+      <a href="#build">Build it</a>
+      <a href="https://github.com/redsteadz/PACMAN">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top" class="wrap">
+
+  <div class="hero">
+    <div>
+      <span class="eyebrow"><span class="dot" style="width:7px;height:7px"></span> v1.0.0 &middot; Windows &amp; Linux</span>
+      <h1>PACMAN</h1>
+      <p class="tagline">
+        A Pac-Man inspired arcade game in C++ with raylib. Four ghosts with the
+        classic chase, scatter and frightened behaviours, power pellets, a map
+        editor, and a generous amount of particle effects.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/redsteadz/PACMAN/releases/latest/download/PACMAN-windows-x86_64.zip">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/redsteadz/PACMAN/releases/latest/download/PACMAN-linux-x86_64.tar.gz">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Download for Linux
+        </a>
+      </div>
+      <p style="margin:16px 0 0;color:var(--muted);font-size:13.5px" id="detect-hint">
+        No install needed &mdash; unzip and play.
+      </p>
+    </div>
+    <div class="shot">
+      <img src="preview.jpg" alt="PACMAN gameplay showing the maze, Pac-Man and the four ghosts" width="912" height="1056" loading="eager">
+    </div>
+  </div>
+
+  <section id="download">
+    <h2>Download</h2>
+    <p class="section-lead">
+      Pre-built binaries for both platforms. Each archive contains the game and
+      every asset it needs, so there is nothing else to install.
+    </p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Windows</h3>
+        <p>64-bit Windows 10 or newer. The executable is statically linked, so there are no extra runtime DLLs to keep alongside it.</p>
+        <a class="dl" href="https://github.com/redsteadz/PACMAN/releases/latest/download/PACMAN-windows-x86_64.zip">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span><strong>PACMAN-windows-x86_64.zip</strong>
+            <span class="size">64-bit &middot; Windows 10+</span>
+          </span>
+        </a>
+        <a class="dl" href="https://github.com/redsteadz/PACMAN/releases">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span><strong>All releases &amp; checksums</strong>
+            <span class="size">versions, SHA256SUMS.txt</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="card">
+        <h3>Linux</h3>
+        <p>Built on Ubuntu and portable across modern glibc distributions. raylib is linked statically, so the only requirements are OpenGL and the usual X11 libraries.</p>
+        <a class="dl" href="https://github.com/redsteadz/PACMAN/releases/latest/download/PACMAN-linux-x86_64.tar.gz">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span><strong>PACMAN-linux-x86_64.tar.gz</strong>
+            <span class="size">64-bit &middot; glibc based distros</span>
+          </span>
+        </a>
+        <a class="dl" href="https://github.com/redsteadz/PACMAN/actions">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+          <span><strong>Build status</strong>
+            <span class="size">every push is compiled for both platforms</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Running it?</strong> Keep the <code>assets</code> folder next to the
+      executable. The game loads textures, sounds and the map file relative to
+      its own folder, so the two need to stay together.
+    </div>
+  </section>
+
+  <section id="howto">
+    <h2>How to play</h2>
+    <p class="section-lead">
+      Clear the maze, grab the power pellets, and keep the ghosts off your tail.
+    </p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Controls</h3>
+        <table>
+          <tr><th>Input</th><th>Action</th></tr>
+          <tr><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Change direction</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Movement boost (limited use)</td></tr>
+          <tr><td>Pause button</td><td>Pause or resume the game</td></tr>
+          <tr><td>Edit button</td><td>Open the map editor</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Map editor</h3>
+        <p>
+          The editor opens from the in-game UI. Paint tiles with the left mouse
+          button, erase with the right, then use the save and load buttons to
+          store your layout as a <code>.bin</code> file in the <code>assets</code>
+          folder and load it again later.
+        </p>
+        <p style="margin-bottom:0">
+          Saved maps are read by name from the text box next to the save button,
+          so keep names short and file-system safe.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="build">
+    <h2>Build it yourself</h2>
+    <p class="section-lead">
+      All you need is CMake, a C++ compiler and raylib 5.x.
+    </p>
+
+    <pre><span class="c"># Linux (Arch / CachyOS)</span>
+sudo pacman -S base-devel cmake raylib
+
+<span class="c"># Linux (Debian / Ubuntu)</span>
+sudo apt install build-essential cmake libraylib-dev
+
+<span class="c"># macOS</span>
+brew install cmake raylib
+
+git clone https://github.com/redsteadz/PACMAN.git
+cd PACMAN
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+./build/bin/Pacman</pre>
+
+    <p class="section-lead" style="margin-bottom:18px">
+      No raylib installed? Let CMake fetch and compile it for you:
+    </p>
+
+    <pre>cmake -S . -B build -DPACMAN_USE_BUNDLED_RAYLIB=ON
+cmake --build build -j</pre>
+
+    <div class="note">
+      <strong>Cross-compiling for Windows?</strong> The repository ships a
+      MinGW-w64 toolchain file at <code>cmake/toolchain-mingw-x86_64.cmake</code>.
+      Add <code>-DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-mingw-x86_64.cmake
+      -DPACMAN_STATIC_RUNTIME=ON</code> to get a standalone <code>.exe</code>.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>PACMAN &middot; built with <a href="https://www.raylib.com/" target="_blank" rel="noopener">raylib</a></span>
+    <span class="sep">&middot;</span>
+    <a href="https://github.com/redsteadz/PACMAN">Source code</a>
+    <span class="sep">&middot;</span>
+    <a href="https://github.com/redsteadz/PACMAN/issues">Report an issue</a>
+    <span class="sep">&middot;</span>
+    <a href="https://github.com/redsteadz/PuzzledChess/releases">PuzzledChess downloads</a>
+  </div>
+</footer>
+
+<script>
+  // Nudge people toward the right archive without hiding the other option.
+  (function () {
+    var hint = document.getElementById('detect-hint');
+    if (!hint) return;
+    var platform = (navigator.userAgentData && navigator.userAgentData.platform) ||
+                   navigator.platform || '';
+    if (/win/i.test(platform)) {
+      hint.textContent = 'Looks like Windows - the .zip above is the one you want.';
+    } else if (/linux/i.test(platform)) {
+      hint.textContent = 'Looks like Linux - grab the .tar.gz above.';
+    }
+  })();
+</script>
+
+</body>
+</html>
