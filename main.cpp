@@ -1,4 +1,5 @@
 #include "headers/animate.h"
+#include "headers/console.h"
 #include "headers/effects.h"
 #include "headers/gui.h"
 #include "headers/raylib_compat.h"
@@ -677,6 +678,18 @@ map<EffectType, Texture2D> EffectMap::effectMap;
 unordered_multiset<Animation *> AnimationManager::animations;
 
 int main() {
+  AttachParentConsole();
+
+  // Every texture, sound and the default map are loaded from "./assets",
+  // relative to the working directory. Report that plainly instead of
+  // segfaulting on an empty map when the folder is missing.
+  if (!FileExists("./assets/defaultMap.bin")) {
+    cerr << "Error: could not find ./assets/defaultMap.bin." << endl;
+    cerr << "Run the game from the folder that contains it - the 'assets'"
+         << " directory has to sit next to the executable." << endl;
+    return EXIT_FAILURE;
+  }
+
   InitWindow(screenWidth, screenHeight, "My first RAYLIB program!");
   InitAudioDevice();
   Texture2D map = LoadTexture("./assets/tileSheet.png");

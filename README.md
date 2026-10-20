@@ -37,9 +37,13 @@ the executable, and run it.
 ```bash
 # Linux
 tar -xzf PACMAN-linux-x86_64.tar.gz
-chmod +x bin/Pacman
-./bin/Pacman
+cd PACMAN-linux-x86_64
+./Pacman
 ```
+
+On Windows, unzip `PACMAN-windows-x86_64.zip` and double-click `Pacman.exe`.
+Both bundles unpack into a single folder with `Pacman` and `assets/` side by
+side — run the game from that folder and keep the two together.
 
 raylib is statically linked into both builds, so nothing needs installing
 alongside them. Every push to `main` is compiled for both platforms, and every

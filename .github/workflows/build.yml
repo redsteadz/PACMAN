@@ -129,18 +129,19 @@ jobs:
         run: |
           # raylib is statically linked, so the published binary must not need
           # libraylib.so present on the player's machine.
-          if ldd dist/bin/Pacman | grep -i raylib; then
+          test -f dist/Pacman
+          if ldd dist/Pacman | grep -i raylib; then
             echo "error: binary still links raylib dynamically" >&2
             exit 1
           fi
-          ldd dist/bin/Pacman
+          ldd dist/Pacman
 
       - name: Verify Windows executable
         if: matrix.id == 'windows'
         run: |
-          test -f dist/bin/Pacman.exe
-          file dist/bin/Pacman.exe
-          if x86_64-w64-mingw32-objdump -p dist/bin/Pacman.exe | grep -q 'DLL Name'; then
+          test -f dist/Pacman.exe
+          file dist/Pacman.exe
+          if x86_64-w64-mingw32-objdump -p dist/Pacman.exe | grep -q 'DLL Name'; then
             echo "::warning::binary still imports DLLs; the static runtime option did not apply"
           else
             echo "No DLL imports - the executable is self-contained."
@@ -149,14 +150,16 @@ jobs:
       - name: Smoke test (offscreen)
         if: matrix.id == 'linux'
         run: |
-          # Runs the real binary long enough to open the window and load every
-          # asset. The runner has no sound card, so ALSA/PulseAudio chatter and
-          # raylib's "Failed to create buffer" warnings are expected here and
-          # must not be treated as failures - only genuine asset load failures
-          # should break the build.
+          # Run the *packaged* bundle the way a player will: from inside the
+          # staged directory, with the repository root NOT as the working
+          # directory. Running from the repo root would silently satisfy the
+          # "./assets" lookups from the source tree and hide a broken layout.
+          # The runner has no sound card, so ALSA/PulseAudio chatter and
+          # raylib's "Failed to create buffer" warnings are expected and must
+          # not be treated as failures.
           set +e
-          xvfb-run -a --server-args="-screen 0 1280x1024x24" \
-            timeout 10 ./dist/bin/Pacman > smoke.log 2>&1
+          ( cd dist && xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+              timeout 10 ./Pacman ) > smoke.log 2>&1
           status=$?
           set -e
           cat smoke.log
@@ -165,24 +168,29 @@ jobs:
             echo "::error::smoke test exited with status $status"
             exit 1
           fi
-          if grep -qE "Failed to load (texture|image|sound|music)|FILEIO: Failed to open" smoke.log; then
-            echo "::error::the game could not load an asset"
-            grep -E "Failed to load|FILEIO: Failed to open" smoke.log
+          if grep -qE "Failed to load (texture|image|sound|music)|FILEIO: Failed to open|Error: could not find" smoke.log; then
+            echo "::error::the game could not load an asset from the packaged bundle"
+            grep -E "Failed to load|FILEIO: Failed to open|could not find" smoke.log
             exit 1
           fi
-          echo "All assets loaded."
+          loaded=$(grep -c "File loaded successfully" smoke.log || true)
+          echo "Packaged bundle loaded $loaded files."
 
       - name: Package
         env:
-          ARCHIVE: ${{ matrix.archive }}
+          ID: ${{ matrix.id }}
         run: |
-          cd dist
-          if [ "$ARCHIVE" = "zip" ]; then
-            zip -qr "../PACMAN-${{ matrix.id }}-x86_64.zip" .
+          # Put everything inside a single top-level directory so extracting the
+          # archive does not spray files across the current folder.
+          stage="PACMAN-$ID-x86_64"
+          mkdir -p "$stage"
+          cp -a dist/. "$stage"/
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            ( cd "$stage" && zip -qr "../$stage.zip" . )
           else
-            tar -czf "../PACMAN-${{ matrix.id }}-x86_64.tar.gz" .
+            tar -czf "$stage.tar.gz" "$stage"
           fi
-          cd ..
+          rm -rf "$stage"
           ls -lh PACMAN-*
 
       - name: Upload artifact
